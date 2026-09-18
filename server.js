@@ -18,7 +18,7 @@ app.get('/api/settings', async (_request, response) => response.json({ ...defaul
 app.put('/api/settings', async (request, response) => { const settings = { ...defaults, ...request.body }; await writeJson(settingsFile, settings); response.json(settings) })
 app.get('/api/actions', async (_request, response) => response.json(await readJson(actionsFile, [])))
 app.delete('/api/actions', async (_request, response) => { await writeJson(actionsFile, []); response.json({ ok: true }) })
-app.post('/api/actions', async (request, response) => { const actions = await readJson(actionsFile, []); actions.unshift({ action: request.body.action === 'yes' ? 'yes' : 'no', noCount: Number(request.body.noCount) || 0, sessionId: String(request.body.sessionId || 'unknown'), createdAt: new Date().toISOString() }); await writeJson(actionsFile, actions); response.status(201).json({ ok: true }) })
+app.post('/api/actions', async (request, response) => { const actions = await readJson(actionsFile, []); const forwardedIp = request.headers['x-forwarded-for']?.split(',')[0]?.trim(); const remoteIp = forwardedIp || request.socket.remoteAddress || 'unknown'; const ip = remoteIp.replace(/^::ffff:/, ''); actions.unshift({ action: request.body.action === 'yes' ? 'yes' : 'no', noCount: Number(request.body.noCount) || 0, sessionId: String(request.body.sessionId || 'unknown'), ip, createdAt: new Date().toISOString() }); await writeJson(actionsFile, actions); response.status(201).json({ ok: true }) })
 
 app.use(express.static(path.join(__dirname, 'dist')))
 app.use((_request, response) => response.sendFile(path.join(__dirname, 'dist', 'index.html')))

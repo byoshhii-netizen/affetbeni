@@ -7,7 +7,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const dataDirectory = path.join(__dirname, 'data')
 const settingsFile = path.join(dataDirectory, 'settings.json')
 const actionsFile = path.join(dataDirectory, 'actions.json')
-const defaults = { question: 'Ben bir eşşeğim, beni affeder misin?', yesLabel: 'Affettim', noLabel: 'Hayır', successMessage: 'Çok teşekkür ederim. Bu dağ ayısı çok mutlu oldu!', foreverMessage: 'Beni bir kez affettin, bir daha affetmen gereken bir durum yaratmayacağım. 💙💙', noMessages: ['Emin misin?', 'Bir daha denesen?', 'Ama tatlısın?', 'Ama üzülüyorum?', 'Çay içsen?', 'Aa ama yapma?'] }
+const defaults = { question: 'Ben bir eşşeğim, beni affeder misin?', yesLabel: 'Affettim', noLabel: 'Hayır', successMessage: 'Çok teşekkür ederim. Bu dağ ayısı çok mutlu oldu!', foreverMessage: 'Beni bir kez affettin, bir daha affetmen gereken bir durum yaratmayacağım. 💙💙', photoUrl: '', noMessages: ['Emin misin?', 'Bir daha denesen?', 'Ama tatlısın?', 'Ama üzülüyorum?', 'Çay içsen?', 'Aa ama yapma?'] }
 
 async function readJson(file, fallback) { try { return JSON.parse(await fs.readFile(file, 'utf8')) } catch { return fallback } }
 async function writeJson(file, value) { await fs.mkdir(dataDirectory, { recursive: true }); await fs.writeFile(file, JSON.stringify(value, null, 2), 'utf8') }

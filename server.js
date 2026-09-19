@@ -7,10 +7,12 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const dataDirectory = path.join(__dirname, 'data')
 const settingsFile = path.join(dataDirectory, 'settings.json')
 const actionsFile = path.join(dataDirectory, 'actions.json')
+const notesFile = path.join(dataDirectory, 'notes.json')
 const defaults = { question: 'Ben bir eşşeğim, beni affeder misin?', yesLabel: 'Affettim', noLabel: 'Hayır', successMessage: 'Çok teşekkür ederim. Bu dağ ayısı çok mutlu oldu!', foreverMessage: 'Beni bir kez affettin, bir daha affetmen gereken bir durum yaratmayacağım. 💙💙', photoUrl: '', noMessages: ['Emin misin?', 'Bir daha denesen?', 'Ama tatlısın?', 'Ama üzülüyorum?', 'Çay içsen?', 'Aa ama yapma?'] }
 
 async function readJson(file, fallback) { try { return JSON.parse(await fs.readFile(file, 'utf8')) } catch { return fallback } }
 async function writeJson(file, value) { await fs.mkdir(dataDirectory, { recursive: true }); await fs.writeFile(file, JSON.stringify(value, null, 2), 'utf8') }
+function getClientIp(request) { const forwardedIp = request.headers['x-forwarded-for']?.split(',')[0]?.trim(); const remoteIp = forwardedIp || request.socket.remoteAddress || 'unknown'; return remoteIp.replace(/^::ffff:/, '') }
 
 const app = express()
 app.use(express.json())
@@ -18,7 +20,10 @@ app.get('/api/settings', async (_request, response) => response.json({ ...defaul
 app.put('/api/settings', async (request, response) => { const settings = { ...defaults, ...request.body }; await writeJson(settingsFile, settings); response.json(settings) })
 app.get('/api/actions', async (_request, response) => response.json(await readJson(actionsFile, [])))
 app.delete('/api/actions', async (_request, response) => { await writeJson(actionsFile, []); response.json({ ok: true }) })
-app.post('/api/actions', async (request, response) => { const actions = await readJson(actionsFile, []); const forwardedIp = request.headers['x-forwarded-for']?.split(',')[0]?.trim(); const remoteIp = forwardedIp || request.socket.remoteAddress || 'unknown'; const ip = remoteIp.replace(/^::ffff:/, ''); actions.unshift({ action: request.body.action === 'yes' ? 'yes' : 'no', noCount: Number(request.body.noCount) || 0, sessionId: String(request.body.sessionId || 'unknown'), ip, createdAt: new Date().toISOString() }); await writeJson(actionsFile, actions); response.status(201).json({ ok: true }) })
+app.post('/api/actions', async (request, response) => { const actions = await readJson(actionsFile, []); actions.unshift({ action: request.body.action === 'yes' ? 'yes' : 'no', noCount: Number(request.body.noCount) || 0, sessionId: String(request.body.sessionId || 'unknown'), ip: getClientIp(request), createdAt: new Date().toISOString() }); await writeJson(actionsFile, actions); response.status(201).json({ ok: true }) })
+app.get('/api/notes', async (_request, response) => response.json(await readJson(notesFile, [])))
+app.post('/api/notes', async (request, response) => { const note = String(request.body.note || '').trim().slice(0, 240); if (!note) return response.status(400).json({ ok: false, error: 'Note is required.' }); const notes = await readJson(notesFile, []); notes.unshift({ note, sessionId: String(request.body.sessionId || 'unknown'), ip: getClientIp(request), createdAt: new Date().toISOString() }); await writeJson(notesFile, notes); response.status(201).json({ ok: true }) })
+app.delete('/api/notes', async (_request, response) => { await writeJson(notesFile, []); response.json({ ok: true }) })
 
 app.use(express.static(path.join(__dirname, 'dist')))
 app.use((_request, response) => response.sendFile(path.join(__dirname, 'dist', 'index.html')))
